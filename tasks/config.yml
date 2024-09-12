@@ -1,0 +1,41 @@
+---
+- name: Create service directories
+  file:
+    dest: '{{ item }}'
+    owner: 'dockremap'
+    group: 'docker'
+    mode: 0755
+    state: 'directory'
+  with_items:
+    - '{{ shlink_service_path }}'
+    - '{{ shlink_web_cont_vol }}'
+
+- name: Create database directory
+  file:
+    dest: '{{ shlink_db_cont_vol }}/data'
+    owner: '{{ shlink_db_host_uid }}'
+    group: '{{ shlink_db_host_uid }}'
+    mode: 0777
+    state: 'directory'
+    recurse: true
+
+- name: Create Web UI servers file
+  copy:
+    dest: '{{ shlink_web_servers_file }}'
+    content: '[]'
+    owner: 'dockremap'
+    group: 'docker'
+    mode: 0644
+    force: false
+
+- name: Create env files
+  template:
+    src: '{{ item }}.j2'
+    dest: '{{ shlink_service_path }}/{{ item }}'
+    owner: dockremap
+    group: docker
+    mode: 0644
+  with_items:
+    - 'app.env'
+    - 'db.env'
+  register: env_files

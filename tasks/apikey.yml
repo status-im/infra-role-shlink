@@ -1,0 +1,38 @@
+---
+- name: Check if API key exists
+  stat:
+    path: '{{ shlink_api_key_file }}'
+  register: shlink_api_key_stat
+
+- name: Create the API key for Web UI
+  command: docker exec -t {{ shlink_app_cont_name }} shlink api-key:generate -n --no-ansi
+  register: shlink_api_key_raw
+  when: shlink_api_key_stat.stat.exists is false
+
+
+- name: Extract API key from output
+  set_fact:
+    shlink_api_key: '{{ shlink_api_key_raw.stdout | regex_search(query) }}'
+  vars:
+    query: '([a-f0-9-]{36})'
+  when: shlink_api_key_stat.stat.exists is false
+
+- name: 'Read API key from file'
+  slurp:
+    path: '{{ shlink_api_key_file }}'
+  register: shlink_api_key_raw
+  when: shlink_api_key_stat.stat.exists
+
+- name: Extract API key from output
+  set_fact:
+    shlink_api_key: '{{ shlink_api_key_raw.content | b64decode | trim }}'
+  when: shlink_api_key_stat.stat.exists
+
+- name: Save API key in a file
+  copy:
+    dest: '{{ shlink_api_key_file }}'
+    content: '{{ shlink_api_key }}'
+    owner: 'dockremap'
+    group: 'docker'
+    mode: 0640
+  when: shlink_api_key_stat.stat.exists is false

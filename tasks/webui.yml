@@ -1,0 +1,12 @@
+---
+- name: Create Servers list for WebUI
+  set_fact:
+    shlink_web_servers:
+      - name: '{{ shlink_domain }}'
+        url: 'https://{{ shlink_domain }}'
+        apiKey: '{{ shlink_api_key }}'
+
+# We use echo to avoid changing INODE of the file
+- name: Create Web UI servers file
+  shell: echo '{{ shlink_web_servers | to_nice_json }}' > '{{ shlink_web_servers_file }}'
+  register: shlink_web_servers_file_state

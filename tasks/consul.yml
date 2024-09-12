@@ -1,0 +1,16 @@
+---
+- name: Create Consul service definition
+  include_role: name=infra-role-consul-service
+  vars:
+    consul_config_name: '{{ shlink_service_name }}'
+    consul_services:
+      - name: '{{ shlink_service_name }}'
+        tags: ['shlink', 'shortener']
+        # we advertise the port with basic auth
+        port: '{{ shlink_app_cont_port }}'
+        address: 'localhost'
+        checks:
+          - id: '{{ shlink_service_name }}-status'
+            name: Shlink Healthcheck
+            type: http
+            http: 'http://localhost:{{ shlink_app_cont_port }}/rest/health'

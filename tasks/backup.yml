@@ -1,0 +1,20 @@
+---
+# These are backed up by Resitc
+- name: 'Create timer for PostgreSQL backup'
+  include_role: name=infra-role-systemd-timer
+  vars:
+    systemd_timer_description: 'Dump {{ shlink_service_name }} PostgreSQL'
+    systemd_timer_name: 'dump-{{ shlink_db_cont_name }}'
+    systemd_timer_user: '{{ shlink_db_backup_user }}'
+    systemd_timer_frequency: '{{ shlink_db_backup_frequency }}'
+    systemd_timer_timeout_sec: '{{ shlink_db_backup_timeout }}'
+    systemd_timer_after_extra: 'docker.service'
+    systemd_timer_start_on_creation: false
+    systemd_timer_script_content: |
+      #!/usr/bin/env bash
+      set -e
+      BKP_DIR="{{ shlink_db_cont_vol }}/backup/{{ shlink_db_name }}"
+      rm -vfr "${BKP_DIR}"
+      /usr/bin/docker exec -i -e PGPORT={{ shlink_db_cont_port }} {{ shlink_db_cont_name }} \
+        pg_dump -F directory -f "/backup/{{ shlink_db_name }}" -U {{ shlink_db_user }} {{ shlink_db_name }}
+      chmod 750 -R "${BKP_DIR}"

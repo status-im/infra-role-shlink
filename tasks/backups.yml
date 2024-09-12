@@ -1,0 +1,33 @@
+---
+- name: Create directory for backups
+  file:
+    path: '{{ shlink_db_backup_path }}'
+    state: directory
+    group: adm
+    mode: 0775
+
+- name: 'Create timer for PostgreSQL backup'
+  include_role: name=infra-role-systemd-timer
+  vars:
+    systemd_timer_description: 'Backup {{ shlink_service_name }} PostgreSQL db as SQL.'
+    systemd_timer_name: 'backup-{{ shlink_db_cont_name }}'
+    systemd_timer_user: '{{ shlink_db_backup_user }}'
+    systemd_timer_frequency: '{{ shlink_db_backup_frequency }}'
+    systemd_timer_timeout_sec: '{{ shlink_db_backup_timeout }}'
+    systemd_timer_work_dir: '{{ shlink_db_backup_path }}'
+    systemd_timer_after_extra: 'docker.service'
+    systemd_timer_start_on_creation: false
+    systemd_timer_script_content: |
+      #!/usr/bin/env bash
+      TSTAMP=$(date -u +%Y%m%d%H%M%S)
+      MAX_KEPT={{ shlink_db_backup_max_kept }}
+      BKP_FILE="{{ shlink_db_cont_name | replace("-", "_") }}_dump_${TSTAMP}.sql"
+      echo "Creating: ${BKP_FILE}"
+      /usr/bin/docker exec \
+        -i {{ shlink_db_cont_name }} pg_dump \
+        -p {{ shlink_db_cont_port }} \
+        -U {{ shlink_db_user }} \
+        {{ shlink_db_name }} \
+        > "${BKP_FILE}"
+      echo "Cleaning up old dumps..."
+      rm -vf $(ls -Art | head -n -${MAX_KEPT})

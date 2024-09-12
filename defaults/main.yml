@@ -1,0 +1,55 @@
+---
+# Public domain for the service
+shlink_domain: ~
+shlink_admin_domain: ~
+
+# Fallback redirect
+shlink_fallback_url: ~
+
+# General ----------------------------------------
+shlink_service_name: 'shlink'
+shlink_service_path: '/docker/{{ shlink_service_name }}'
+shlink_compose_file: '{{ shlink_service_path }}/docker-compose.yml'
+shlink_api_key_file: '{{ shlink_service_path }}/api-key'
+# App --------------------------------------------
+shlink_app_cont_name: '{{ shlink_service_name }}-app'
+shlink_app_cont_version: '2.8.1'
+shlink_app_cont_image: 'shlinkio/shlink:{{ shlink_app_cont_version }}'
+shlink_app_cont_port: 8080
+shlink_app_workers: '{{ ansible_processor_vcpus }}'
+# Web --------------------------------------------
+shlink_web_cont_name: '{{ shlink_service_name }}-web'
+shlink_web_cont_version: '3.2.0'
+shlink_web_cont_image: 'shlinkio/shlink-web-client:{{ shlink_web_cont_version }}'
+shlink_web_cont_vol: '{{ shlink_service_path }}/web'
+shlink_web_cont_port: 8090
+shlink_web_servers_file: '{{ shlink_web_cont_vol }}/servers.json'
+# OAuth ------------------------------------------
+shlink_oauth_cont_name: '{{ shlink_service_name }}-oauth'
+shlink_oauth_cont_version: 'v7.1.3-amd64'
+shlink_oauth_cont_image: 'quay.io/oauth2-proxy/oauth2-proxy:{{ shlink_oauth_cont_version }}'
+shlink_oauth_cont_port: 8091
+shlink_oauth_google_domain: ~
+shlink_oauth_cookie_secret: ~
+shlink_oauth_client_id: ~
+shlink_oauth_client_secret: ~
+# DB ---------------------------------------------
+shlink_db_cont_image: 'postgres:13-alpine'
+shlink_db_cont_name: '{{ shlink_service_name }}-db'
+shlink_db_cont_vol: '{{ shlink_service_path }}/db'
+shlink_db_cont_port: 5432
+shlink_db_cont_uid: 70
+shlink_db_host_uid: '{{ 100000 + shlink_db_cont_uid | int }}'
+shlink_db_name: 'shlink'
+shlink_db_user: 'shlink'
+shlink_db_pass: 'changeIfYouCare'
+# Backups ----------------------------------------
+shlink_db_backup_frequency: 'daily'
+shlink_db_backup_timeout: '120'
+shlink_db_backup_user: 'root'
+# ------------------------------------------------
+
+# general container management
+compose_state: 'present'
+compose_recreate: 'smart'
+compose_restart: false
