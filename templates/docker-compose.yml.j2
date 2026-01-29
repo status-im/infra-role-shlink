@@ -1,45 +1,23 @@
 ---
 version: '3.7'
 services:
-  oauth:
-    container_name: '{{ shlink_oauth_cont_name }}'
-    image: '{{ shlink_oauth_cont_image }}'
-    restart: 'always'
-    ports:
-      - '127.0.0.1:{{ shlink_oauth_cont_port }}:{{ shlink_oauth_cont_port }}'
-    command: |
-      --provider='google'
-      --email-domain='{{ shlink_oauth_google_domain | mandatory }}'
-      --redirect-url='https://{{ shlink_admin_domain | mandatory }}/oauth2/callback'
-      --cookie-domain='{{ shlink_admin_domain | mandatory }}'
-      --cookie-secret='{{ shlink_oauth_cookie_secret | mandatory }}'
-      --client-id='{{ shlink_oauth_client_id | mandatory }}'
-      --client-secret='{{ shlink_oauth_client_secret | mandatory }}'
-      --http-address='0.0.0.0:{{ shlink_oauth_cont_port }}'
-      --upstream='http://web:80/'
-      --request-logging=false
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:{{ shlink_oauth_cont_port }}/ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
   web:
     container_name: '{{ shlink_web_cont_name }}'
     image: '{{ shlink_web_cont_image }}'
-    env_file: '{{ shlink_service_path }}/app.env'
     restart: 'always'
     ports:
-      - '{{ shlink_web_cont_port }}:80/tcp'
+      - '127.0.0.1:{{ shlink_web_cont_port }}:8080'
     volumes:
       - '{{ shlink_web_servers_file }}:/usr/share/nginx/html/servers.json'
     depends_on:
       - 'app'
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:80/favicon.png"]
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/"]
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - shlink
 
   app:
     container_name: '{{ shlink_app_cont_name }}'
@@ -47,14 +25,16 @@ services:
     env_file: '{{ shlink_service_path }}/app.env'
     restart: 'always'
     ports:
-      - '{{ shlink_app_cont_port }}:{{ shlink_app_cont_port }}/tcp'
+      - '127.0.0.1:{{ shlink_app_cont_port }}:8080/tcp'
     depends_on:
       - 'db'
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:{{ shlink_app_cont_port }}/rest/health"]
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/rest/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - shlink
 
   db:
     container_name: '{{ shlink_db_cont_name }}'
@@ -64,7 +44,7 @@ services:
     env_file: '{{ shlink_service_path }}/db.env'
     command: '-p {{ shlink_db_cont_port }}'
     ports:
-      - '{{ shlink_db_cont_port }}:{{ shlink_db_cont_port }}/tcp'
+      - '127.0.0.1:{{ shlink_db_cont_port }}:{{ shlink_db_cont_port }}/tcp'
     tmpfs:
       - '/run/postgresql'
       - '/tmp'
@@ -75,3 +55,9 @@ services:
       test: ["CMD", "pg_isready", "-p{{ shlink_db_cont_port }}", "-U{{ shlink_db_user }}"]
       interval: 10s
       retries: 3
+    networks:
+      - shlink
+
+networks:
+  shlink:
+    name: shlink
